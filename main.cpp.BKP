@@ -1,0 +1,59 @@
+#include <Arduino.h>
+
+#include <Adafruit_AHTX0.h>
+
+Adafruit_AHTX0 aht;
+
+#define FAN1_PIN 0
+#define FAN2_PIN 2
+#define HEATER_PIN 4
+
+void setup()
+{
+  pinMode(FAN1_PIN, OUTPUT);
+  pinMode(FAN2_PIN, OUTPUT);
+  pinMode(HEATER_PIN, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Adafruit AHT10/AHT20 demo!");
+
+  if (!aht.begin())
+  {
+    Serial.println("Could not find AHT? Check wiring");
+    while (1)
+      delay(10);
+  }
+}
+
+bool isDrying = false;
+
+void loop()
+{
+  sensors_event_t humidity, temp;
+  aht.getEvent(&humidity, &temp); // populate temp and humidity objects with fresh data
+  Serial.print("Temperature: ");
+  Serial.print(temp.temperature);
+  Serial.println(" degrees C");
+  Serial.print("Humidity: ");
+  Serial.print(humidity.relative_humidity);
+  Serial.println("% rH");
+
+  // Control fans and heater based on temperature and humidity
+  // Adjust these values as per your requirements
+  if (!isDrying && humidity.relative_humidity > 30.0)
+  {
+    Serial.println("Humidity is high, turning on fans");
+    analogWrite(FAN1_PIN, 255);   // Turn on fan 1 at full speed
+    analogWrite(FAN2_PIN, 255);   // Turn on fan 2 at full speed
+    analogWrite(HEATER_PIN, 255); // Turn on heater at full power
+    isDrying = true;
+  }
+  else if (isDrying && humidity.relative_humidity < 15.0)
+  {
+    Serial.println("Humidity is low, turning on heater");
+    analogWrite(FAN1_PIN, 0);   // Turn off fan 1
+    analogWrite(FAN2_PIN, 0);   // Turn off fan 2
+    analogWrite(HEATER_PIN, 0); // Turn on heater at full power
+    isDrying = false;
+  }
+  delay(1000);
+}
